@@ -34,14 +34,18 @@ final = waypoints(:,end);
 
 %set initial localization
 % z0 = [X(1); Y(1); Z(1); zeros(9,1)]; % initial heigth of 0 for now
-z0 = [251.630676401149;-1.64229950423371e-16;203.110841915035;-0.0129080191706565;3.17929233792603e-17;0.000755038393126952;-1.07681517008105e-17;-0.000159116346370495;-3.41740524767430e-17;1.56617530807226e-17;0.00236661807669614;-7.58941520739853e-19];
 % z0 = zeros(12,1);
+z0 = [264.334579554578;6.37302432870657e-17;193.462025344637;1.36001436380456e-09;8.07781392920884e-17;2.08965197162777e-14;1.22923215490388e-17;2.62946516276818e-11;-4.51266628231915e-16;-1.17738245147906e-17;-2.57248566250427e-10;-4.22838847269347e-18];
 z  = z0;
 z_list = z;
 u_list = [];
+openloop_z = {};
+openloop_u = {};
+openloop_pointsInterp = {};
 
 % set reference velocity
 v_ref = 2;
+vCur = 0;
 
 % Define horizon
 N = 20;
@@ -54,7 +58,7 @@ goal_idx = 1;
 %while the model has not reached within a certain tolerance of the end
 %point
 %while norm(z(1:3) - final) > 2
-for M=1:1000
+for M=1:2000000
     
     %     dist=z0(3)*Ts;
     %     x_pos=z0(1)+cos(z0(4))*dist;
@@ -74,9 +78,7 @@ for M=1:1000
 %     current_idx = find(current_dis == min(current_dis));
     [val,current_idx] = min(current_dis);
     
-    if current_idx >= last_current_idx
-        [val,current_idx] = min(current_dis);
-    else
+    if current_idx < last_current_idx
         current_idx = last_current_idx + 1;
     end
     %     goal_idx = current_idx + 5;
@@ -84,11 +86,10 @@ for M=1:1000
     umax = [9000 9000 9000 9000]';
     umin = [0 0 0 0]';
     
+    vCur = z0(4:6);
     % Grab currenct velocity
-    if M == 1
+    if norm(vCur) <= 1.0
         vCur = v_ref;
-    else
-        vCur = z0(4:6);
     end
     
     % Find distance traveled in N time steps
@@ -103,7 +104,7 @@ for M=1:1000
     
     last_goal_idx = goal_idx;
     goal_idx = current_idx + k;
-    if (goal_idx < last_goal_idx)
+    if goal_idx < last_goal_idx
         goal_idx = last_goal_idx;
     end
     
@@ -113,6 +114,7 @@ for M=1:1000
     disp(['Goal Index:', num2str(goal_idx)])
     
     [pointsInterp] = Ninterp(waypoints, current_idx, goal_idx, vCur, Ts, N);
+    openloop_pointsInterp(M) = {pointsInterp};
     
     x_interp=[];
     y_interp=[];
@@ -158,6 +160,8 @@ for M=1:1000
     z = zOpt(:, 2);
     z_list = [z_list z];
     u_list = [u_list u];
+    openloop_z(M) = {zOpt};
+    openloop_u(M) = {uOpt};
     z0 = z;
     
     i = i + 1;
@@ -181,8 +185,8 @@ tube_radius = 10;
 quadcopter_width = 2;
 
 P = 5*eye(3);
-Q = 10*eye(3);
-R = eye(4);
+Q = eye(3);
+R = 10*eye(4);
 
 %define objective function
 objective=0;
@@ -217,6 +221,7 @@ end
 constraints=[constraints z(1:3,N+1) == zN(1:3,N)];
 
 % Set options for YALMIP and solver
+optimoptions(@quadprog,'StepTolerance',1e-6,'OptimalityTolerance',1e-4,'ConstraintTolerance',1e-4);
 options = sdpsettings('verbose', 0, 'solver', 'quadprog');
 % Solve
 sol = optimize(constraints, objective, options);
