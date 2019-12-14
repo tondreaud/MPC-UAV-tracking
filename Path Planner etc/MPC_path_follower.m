@@ -4,8 +4,8 @@ clear all
 
 %load Waypoints and State Constraint points
 % load('WayP.mat')
-% load('wpx8.mat');
-load('WayP.mat');
+load('wpx8.mat');
+% load('WayP.mat');
 X=dd(:,1);
 Y=dd(:,2);
 Z=dd(:,3);
@@ -34,7 +34,7 @@ final = waypoints(:,end);
 
 %set initial localization
 % z0 = [X(1); Y(1); Z(1); zeros(9,1)]; % initial heigth of 0 for now
-z0 = [106;-8.44148154647791e-13;103.654672318360;0.0914521204373255;-6.59114957604132e-15;0.597948519860958;-5.67206472330936e-16;0.00468637882237349;-1.11564403548758e-17;2.86911200224211e-16;-0.0266458223109201;-3.25260651745651e-19];
+z0 = [251.630676401149;-1.64229950423371e-16;203.110841915035;-0.0129080191706565;3.17929233792603e-17;0.000755038393126952;-1.07681517008105e-17;-0.000159116346370495;-3.41740524767430e-17;1.56617530807226e-17;0.00236661807669614;-7.58941520739853e-19];
 % z0 = zeros(12,1);
 z  = z0;
 z_list = z;
@@ -239,7 +239,7 @@ function [dd] = Ninterp(waypoints, current_idx, goal_idx, vCur, Ts, N)
 WP = waypoints(:,current_idx:goal_idx)';
 
 temp = cat(1,0,cumsum(sqrt(sum(diff(WP,[],1).^2,2))));
-dd = interp1(temp, WP, unique([temp(:)' linspace(0,temp(end),N)]),'cubic');
+dd = interp1(temp, WP, unique([temp(:)' linspace(0,temp(end),N)]),'PCHIP');
 
 end
 
