@@ -21,6 +21,8 @@ Ts = 0.1;
 
 waypoints = [X,Y,Z]';
 
+vCur = 0;
+
 % Determine distance between waypoints
 normVec = [];
 for i = 1:size(waypoints,2)-1
@@ -41,11 +43,10 @@ z_list = z;
 u_list = [];
 
 % set reference velocity
-v_ref = 4;
-vCur = 0;
+v_ref = 2;
 
 % Define horizon
-N = 50;
+N = 20;
 i = 0;
 
 % Initialize idx
@@ -86,7 +87,7 @@ for M=1:1000
     umin = [0 0 0 0]';
     
     % Grab currenct velocity
-    if vCur <= v_ref
+    if M == 1
         vCur = v_ref;
     else
         vCur = z0(4:6);
@@ -184,7 +185,7 @@ quadcopter_width = 2;
 P = 5*eye(3);
 Q = 10*eye(3);
 R = eye(4);
-VEL = 10*eye(3);
+VEL = 5*eye(3);
 
 %define objective function
 objective=0;
@@ -213,9 +214,9 @@ for i = 1:N
     %         % 	        constraints = [constraints -pi/10<=u(2,i+1)-u(2,i)<=pi/10];
     %     end
 end
-% for k=1:N+1
-%     constraints=[constraints zmin(1:2)<=z(7:8,k)<=zmax(1:2) zmin(3:4)<=z(10:11,k)<=zmax(3:4)];
-% end
+for k=1:N+1
+    constraints=[constraints zmin(1:2)<=z(7:8,k)<=zmax(1:2) zmin(3:4)<=z(10:11,k)<=zmax(3:4)];
+end
 constraints=[constraints z(1:3,N+1) == zN(1:3,N)];
 
 % Set options for YALMIP and solver
